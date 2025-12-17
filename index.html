@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="uk">
+<head>
+  <meta charset="utf-8" />
+  <title>Is it skiing yet? Bukovel</title>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 20px; }
+    button { padding: 10px 16px; font-size: 16px; cursor: pointer; }
+    table { border-collapse: collapse; margin-top: 16px; width: 420px; }
+    th, td { border: 1px solid #ddd; padding: 8px; }
+    th { text-align: left; }
+    .meta { margin-top: 10px; color: #555; }
+  </style>
+</head>
+<body>
+  <h1>Погода в Буковелі (14 днів)</h1>
+
+  <button id="btn">ОНОВИТИ</button>
+  <div class="meta" id="meta">Натисни “ОНОВИТИ”, щоб завантажити прогноз.</div>
+
+  <table id="tbl" style="display:none;">
+    <thead>
+      <tr>
+        <th>Дата</th>
+        <th>Температура (°C, max)</th>
+      </tr>
+    </thead>
+    <tbody id="tbody"></tbody>
+  </table>
+
+<script>
+  // ВАЖЛИВО: вставиш сюди домен App Service, напр:
+  // https://isitskiingyet-web.azurewebsites.net
+  const API_BASE = "https://YOUR_APP_SERVICE.azurewebsites.net";
+
+  const btn = document.getElementById("btn");
+  const meta = document.getElementById("meta");
+  const tbl = document.getElementById("tbl");
+  const tbody = document.getElementById("tbody");
+
+  function render(items) {
+    tbody.innerHTML = "";
+    for (const row of items) {
+      const tr = document.createElement("tr");
+      const tdDate = document.createElement("td");
+      const tdTemp = document.createElement("td");
+      tdDate.textContent = row.date;
+      tdTemp.textContent = row.temp_c;
+      tr.appendChild(tdDate);
+      tr.appendChild(tdTemp);
+      tbody.appendChild(tr);
+    }
+    tbl.style.display = "table";
+  }
+
+  btn.onclick = async () => {
+    meta.textContent = "Оновлюю прогноз...";
+    tbl.style.display = "none";
+
+    try {
+      const res = await fetch(API_BASE + "/api/update-forecast", {
+        method: "POST"
+      });
+      if (!res.ok) throw new Error("HTTP " + res.status);
+
+      const data = await res.json();
+      render(data.items);
+
+      meta.textContent =
+        `Останнє оновлення: ${data.created_at} | ` +
+        `Збережено в БД: ${data.saved_to_db ? "так" : "ні"}`;
+    } catch (e) {
+      meta.textContent = "Помилка оновлення. Перевір API_BASE і бекенд. " + e;
+    }
+  };
+</script>
+</body>
+</html>
